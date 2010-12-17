@@ -66,11 +66,13 @@ class GsGtk():
 	def upload(self,widget):
 		if self.bucket == '':
 			return 0
-		self.choose_for_upload = self.builder.get_object('choose_for_upload')
-		response = self.choose_for_upload.run()
-		#response = gtk.gtk_file_chooser_dialog_new()
+		choose_for_upload = gtk.FileChooserDialog(title='Upload ... '
+			,parent=None
+			,action=gtk.FILE_CHOOSER_ACTION_OPEN
+			,buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+		response = choose_for_upload.run()
 		if response == gtk.RESPONSE_OK:
-			filename = self.choose_for_upload.get_uri()
+			filename = choose_for_upload.get_uri()
 			local_uri = boto.storage_uri(filename)
 			remote_uri = boto.storage_uri('gs://' + self.bucket + os.sep + filename.split('/')[-1:][0])
 			new_remote_uri = remote_uri.clone_replace_name(local_uri.object_name)
@@ -80,20 +82,23 @@ class GsGtk():
 			local_key.get_file(tmp)
 			tmp.seek(0)
 			remote_key.set_contents_from_file(tmp)
-			self.refresh()
-		self.choose_for_upload.hide()
+			self.refresh(self)
+		choose_for_upload.hide()
 
 	def download(self,widget):
-		self.choose_for_download = self.builder.get_object('choose_for_download')
+		choose_for_download = gtk.FileChooserDialog(title='Download ... '
+			,parent=None
+			,action=gtk.FILE_CHOOSER_ACTION_SAVE
+			,buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
 		if self.remote_treeview.get_selection().count_selected_rows() == 0:
 			print '請至少選擇一個文件'
 			return 0
 		row = self.remote_treeview.get_selection().get_selected_rows()[1][0]
 		remote_name = self.remote_liststore[row][0]
-		self.choose_for_download.set_current_name(remote_name.split('/')[-1:][0])
-		response = self.choose_for_download.run()
+		choose_for_download.set_current_name(remote_name.split('/')[-1:][0])
+		response = choose_for_download.run()
 		if response == gtk.RESPONSE_OK:
-			filename = self.choose_for_download.get_uri()
+			filename = choose_for_download.get_uri()
 			local_uri = boto.storage_uri(filename)
 			remote_uri = boto.storage_uri('gs://' + self.bucket + os.sep + remote_name)
 			new_local_uri = local_uri.clone_replace_name(remote_uri.object_name)
@@ -103,7 +108,7 @@ class GsGtk():
 			remote_key.get_file(tmp)
 			tmp.seek(0)
 			local_key.set_contents_from_file(tmp)
-		self.choose_for_download.hide()
+		choose_for_download.destroy()
 
 	def delete(self,widget):
 		if self.remote_treeview.get_selection().count_selected_rows() == 0:
